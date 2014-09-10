@@ -1,0 +1,61 @@
+1. 
+6:
+	Time to Complete: 46m5.709s
+	Mappers: 2 + 25*24 + 23*48+ 1176 = 2880
+	Reducers: 49 * 24 + 2 = 1178
+9:
+	Time to Complete: 47m51.24s
+	Mappers: 2 + 25*36 + 23*72 + 1764 = 4322
+	Reducers: 49*36 + 2 = 1766
+12:
+	Time to Complete: 49m10.75s
+	Mappers: 2 + 25*48 + 23*96 + 2352 = 5762
+	Reducers: 49*48 + 2 = 2354
+
+2. 
+Mean Processing Rate:
+	6: 2.65 MB/s
+	9: 2.55 MB/s
+	12: 2.48 MB/s
+
+OutputSize:
+	6: 3,662.951 MB
+	9: 3,663.079 MB
+	12: 3,663.208 MB
+
+3.
+Speedup 6 to 9: 0.96
+Speedup 6 to 12: 0.94
+This is a case of weak scaling because we do not see a speedup when we increase the number machines working on this mapreduce problem. In fact, we see a speedup less than 1 which indicates that we task slows down with an increased number of machines. This means that hadoop parallelizes the work very poorly. In fact the gain from more machines is so small (if there is any at all) that the cost to increase the number of machines is greater than the gain from the larger number of machines. This cost can arrise from the fact that we increase the number of reducers and mappers (which yield little to no speed up in this implementation) which requires more interfacing between the master and its workers and all the processes the workers have to run each time to get and start working with data.
+
+4.
+Combiner
+PossibleMoves: No, no combiner could be used to speed up the process since, the KV pairs are (child, parent) and there is now way to map the information of multiple parents into one parent
+or to reduce the number of KV pairs (since pruning here is also not an option)
+SolveMoves: Yes, we can use a combiner to get rid of pairs we know the solver will not use, such as pairs that do not stem from possible moves (or only keeping one pair from possible moves
+in order to ensure we can check the validity of this board in the reducer) and removing all bytewritables that have longer moves till end for wins and and removing all bytewritables that have shorter paths for draws and losses. This can provide a resonably large speed increase due to the fact that it does not unessisarily write or transmit a lot of bytewritables that will not be used. Now each machine will output many fewer values leading to a speed up due to reduced data transmission.
+InitFirst: No, this mapper is only called once and only emits one pair so the number of KV pairs cannot be reduced.
+FinalMoves: No, a combiner can not be used since the reducer simply changes the key from one state to another (not actually reducing the number of values) so a combiner would lead to a loss in data.
+
+5.
+Price per GB for 6 workers: 0.540 $/GB
+Price per GB for 9 workers: 0.666 $/GB
+Price per GB for 12 workers: 0.914 $/GB 
+
+6. 
+Cost in EC2 Credits: 
+The first two are cost estimates assuming that the cost is based on the number of hour rounded up individually per machine
+This is an approximate ignoring any tests I reran: 
+6: 8.16 (1 hour one minute rounds up to 2 hours) (2 hours at $4.08/hour)
+9: 6.12 (<1 hour at $6.12/hour)
+12: 8.16 (<1 hour at $8.16/hour)
+Total: 22.44$
+
+If I count the fact that I reran my cluster of 6 instances 2 more times:
+6: 16.32 (1 run slightly over one hour, and 2 runs below one hour) (4 hours at $4.08/hour)
+9: 6.12 (<1 hour at $6.12/hour)
+12: 8.16 (<1 hour at $8.16/hour)
+Actual Total: $30.60
+
+This is the actual total if the rounding is total per account as apposed to per instance run (i.e. if Cost = ciel(Total Hours) * 0.68
+End Cost: 34 hours * $0.68 = $23.12
